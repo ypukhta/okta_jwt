@@ -30,7 +30,7 @@ setup(
     description="Okta JWT Access Token verifier",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/ypukhta/async_okta_jwt",
+    url="https://github.com/ypukhta/okta_jwt",
     packages=get_packages('async_okta_jwt'),
     classifiers=[
         'Development Status :: 5 - Production/Stable',
