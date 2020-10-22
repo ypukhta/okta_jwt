@@ -52,6 +52,7 @@ https://github.com/ypukhta/async_okta_jwt. This project is intended to be a safe
 ## Authors
 
 * **Adithya Sampatoor**
+* **Yevgen Pukhta**
 
 ## License
 
