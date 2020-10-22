@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-import okta_jwt
+import async_okta_jwt
 from setuptools import setup
 
 with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
@@ -23,15 +23,15 @@ def get_packages(package):
 extras_require = {}
 
 setup(
-    name="okta_jwt",
-    version=okta_jwt.__version__,
-    author="Adithya Sampatoor",
-    author_email="adithya.sampatoor@gmail.com",
+    name="async_okta_jwt",
+    version=async_okta_jwt.__version__,
+    author="Adithya Sampatoor, Yevgen Pukhta",
+    author_email="adithya.sampatoor@gmail.com, eugene.pukhta@gmail.com",
     description="Okta JWT Access Token verifier",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/adithyasampatoor/okta_jwt",
-    packages=get_packages('okta_jwt'),
+    url="https://github.com/ypukhta/async_okta_jwt",
+    packages=get_packages('async_okta_jwt'),
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
@@ -42,6 +42,6 @@ setup(
         'Topic :: Utilities'
     ],
     extras_require=extras_require,
-    tests_require=['mock', 'ddt'],
-    install_requires=['six <2.0', 'requests', 'python-jose']
+    tests_require=['mock', 'ddt', 'aioresponses'],
+    install_requires=['six <2.0', 'requests-async', 'python-jose']
 )

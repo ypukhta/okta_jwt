@@ -1,8 +1,8 @@
-import requests
+import requests_async as requests
 from jose import jwk, jwt
 from requests.auth import HTTPBasicAuth
 from jose.utils import base64url_decode
-from okta_jwt.utils import verify_exp, verify_aud, check_presence_of, verify_iat, verify_iss, verify_cid
+from async_okta_jwt.utils import verify_exp, verify_aud, check_presence_of, verify_iat, verify_iss, verify_cid
 
 
 
@@ -10,7 +10,8 @@ JWKS_CACHE = {}
 
 
 # Generates Okta Access Token
-def generate_token(issuer, client_id, client_secret, username, password, scope='openid'):
+async def generate_token(issuer, client_id, client_secret, username, password,
+                    scope='openid'):
     """For generating a token, you need to pass in the Issuer,
     Client ID, Client Secret, Username and Password
     """
@@ -32,7 +33,8 @@ def generate_token(issuer, client_id, client_secret, username, password, scope='
     url = "{}/v1/token".format(issuer)
 
     try:
-        response = requests.post(url, data=payload, headers=headers, auth=auth)
+        response = await requests.post(url, data=payload, headers=headers,
+                                   auth=auth)
 
         # Consider any status other than 2xx an error
         if not response.status_code // 100 == 2:
@@ -52,19 +54,19 @@ def generate_token(issuer, client_id, client_secret, username, password, scope='
 
 
 # Verifies Claims
-def verify_claims(payload, issuer, audience, cid_list):
+async def verify_claims(payload, issuer, audience, cid_list):
     """ Validates Issuer, Client IDs, Audience
     Issued At time and Expiration in the Payload
     """
-    verify_iss(payload, issuer)
-    verify_cid(payload, cid_list)
-    verify_aud(payload, audience)
-    verify_exp(payload)
-    verify_iat(payload)
+    await verify_iss(payload, issuer)
+    await verify_cid(payload, cid_list)
+    await verify_aud(payload, audience)
+    await verify_exp(payload)
+    await verify_iat(payload)
 
 
 # Validates Token
-def validate_token(access_token, issuer, audience, client_ids):
+async def validate_token(access_token, issuer, audience, client_ids):
     # Client ID's list
     cid_list = []
 
@@ -73,17 +75,17 @@ def validate_token(access_token, issuer, audience, client_ids):
     else:
         cid_list = client_ids
 
-    check_presence_of(access_token, issuer, audience, cid_list)
+    await check_presence_of(access_token, issuer, audience, cid_list)
 
     # Decoding Header & Payload from token
     header  = jwt.get_unverified_header(access_token)
     payload = jwt.get_unverified_claims(access_token)
 
     # Verifying Claims
-    verify_claims(payload, issuer, audience, cid_list)
+    await verify_claims(payload, issuer, audience, cid_list)
 
     # Verifying Signature
-    jwks_key = fetch_jwk_for(header, payload)
+    jwks_key = await fetch_jwk_for(header, payload)
     key      = jwk.construct(jwks_key)
     message, encoded_sig = access_token.rsplit('.', 1)
     decoded_sig = base64url_decode(encoded_sig.encode('utf-8'))
@@ -98,7 +100,7 @@ def validate_token(access_token, issuer, audience, client_ids):
 
 
 # Extract public key from metadata's jwks_uri using kid
-def fetch_jwk_for(header, payload):
+async def fetch_jwk_for(header, payload):
     # Extracting kid from the Header
     if 'kid' in header:
         kid = header['kid']
@@ -113,10 +115,11 @@ def fetch_jwk_for(header, payload):
             return JWKS_CACHE[kid]
 
     # Fetching jwk
-    url = fetch_metadata_for(payload)['jwks_uri']
+    jwks = await fetch_metadata_for(payload)
+    url = jwks['jwks_uri']
 
     try:
-        jwks_response = requests.get(url)
+        jwks_response = await requests.get(url)
 
         # Consider any status other than 2xx an error
         if not jwks_response.status_code // 100 == 2:
@@ -136,7 +139,7 @@ def fetch_jwk_for(header, payload):
     return jwk
 
 
-def fetch_metadata_for(payload):
+async def fetch_metadata_for(payload):
     # Extracting client_id and issuer from the Payload
     client_id = payload['cid']
     issuer    = payload['iss']
@@ -145,7 +148,7 @@ def fetch_metadata_for(payload):
     url = "{}/.well-known/oauth-authorization-server?client_id={}".format(issuer, client_id)
 
     try:
-        metadata_response = requests.get(url)
+        metadata_response = await requests.get(url)
 
         # Consider any status other than 2xx an error
         if not metadata_response.status_code // 100 == 2:

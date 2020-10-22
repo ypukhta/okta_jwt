@@ -37,3 +37,6 @@ var/
 venv/
 .vscode/
 runcoverage.sh
+.idea/
+requirements-dev.txt
+.gitconfig

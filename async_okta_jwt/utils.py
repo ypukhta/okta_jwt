@@ -1,11 +1,10 @@
 from calendar import timegm
 from datetime import datetime, timedelta
 from six import string_types
-from okta_jwt.exceptions import ExpiredSignatureError, JWTClaimsError
+from async_okta_jwt.exceptions import ExpiredSignatureError, JWTClaimsError
 
 
-
-def check_presence_of(access_token, issuer, audience, client_ids):
+async def check_presence_of(access_token, issuer, audience, client_ids):
     if not access_token:
         raise ValueError('Access Token is required')
 
@@ -19,17 +18,17 @@ def check_presence_of(access_token, issuer, audience, client_ids):
         raise ValueError('Client ID is required')
 
 
-def verify_iss(payload, issuer):
+async def verify_iss(payload, issuer):
     if payload['iss'] != issuer:
         raise JWTClaimsError('Invalid Issuer')
 
 
-def verify_cid(payload, cid_list):
+async def verify_cid(payload, cid_list):
     if not payload['cid'] in cid_list:
         raise JWTClaimsError('Invalid Client')
 
 
-def verify_exp(payload, leeway=0):
+async def verify_exp(payload, leeway=0):
     """Validates that the 'exp' claim is valid.
     The "exp" (expiration time) claim identifies the expiration time on
     or after which the JWT MUST NOT be accepted for processing.  The
@@ -55,7 +54,7 @@ def verify_exp(payload, leeway=0):
         raise ExpiredSignatureError('Token is expired.')
 
 
-def verify_aud(payload, audience=None):
+async def verify_aud(payload, audience=None):
     """Validates that the 'aud' claim is valid.
     The "aud" (audience) claim identifies the recipients that the JWT is
     intended for. Each principal intended to process the JWT MUST
@@ -80,7 +79,7 @@ def verify_aud(payload, audience=None):
         raise JWTClaimsError('Invalid Audience')
 
 
-def verify_iat(payload, leeway=300):
+async def verify_iat(payload, leeway=300):
     """The iat value indicates what time the token was "issued at". 
     We verify that this claim is valid by checking that the token was 
     not issued in the future, with some leeway for clock skew.

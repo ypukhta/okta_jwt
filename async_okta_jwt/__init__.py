@@ -1,4 +1,4 @@
-__name__      = 'okta_jwt'
+__name__      = 'async_okta_jwt'
 __version__   = '1.3.5'
 __author__    = 'Adithya Sampatoor'
 __license__   = 'MIT'
