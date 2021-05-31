@@ -1,4 +1,4 @@
-from aioresponses.compat import AsyncTestCase
+import asynctest
 from mock import patch
 from ddt import ddt, data, unpack
 from async_okta_jwt import utils
@@ -6,7 +6,7 @@ from async_okta_jwt.exceptions import JWTClaimsError, ExpiredSignatureError
 
 
 @ddt
-class TestUtils(AsyncTestCase):
+class TestUtils(asynctest.TestCase):
     now = 1545320000
     iat = 1545315000
 

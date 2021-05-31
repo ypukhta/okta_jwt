@@ -37,11 +37,11 @@ setup(
         'Intended Audience :: Developers',
         'Natural Language :: English',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Utilities'
     ],
     extras_require=extras_require,
-    tests_require=['mock', 'ddt', 'aioresponses'],
-    install_requires=['six <2.0', 'requests-async', 'python-jose']
+    tests_require=['mock', 'ddt', 'asynctest'],
+    install_requires=['six <2.0', 'httpx', 'python-jose']
 )

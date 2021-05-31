@@ -1,13 +1,10 @@
-import requests_async as requests
+import httpx
 from jose import jwk, jwt
-from requests.auth import HTTPBasicAuth
 from jose.utils import base64url_decode
 from async_okta_jwt.utils import verify_exp, verify_aud, check_presence_of, verify_iat, verify_iss, verify_cid
 
 
-
 JWKS_CACHE = {}
-
 
 # Generates Okta Access Token
 async def generate_token(issuer, client_id, client_secret, username, password,
@@ -15,7 +12,7 @@ async def generate_token(issuer, client_id, client_secret, username, password,
     """For generating a token, you need to pass in the Issuer,
     Client ID, Client Secret, Username and Password
     """
-    auth = HTTPBasicAuth(client_id, client_secret)
+    auth = httpx.BasicAuth(client_id, client_secret)
 
     headers = {
         'Accept':       'application/json',
@@ -33,7 +30,8 @@ async def generate_token(issuer, client_id, client_secret, username, password,
     url = "{}/v1/token".format(issuer)
 
     try:
-        response = await requests.post(url, data=payload, headers=headers,
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, data=payload, headers=headers,
                                    auth=auth)
 
         # Consider any status other than 2xx an error
@@ -48,7 +46,7 @@ async def generate_token(issuer, client_id, client_secret, username, password,
         access_token = return_value['access_token']
 
         return access_token
-    except requests.exceptions.RequestException as e:
+    except httpx.RequestError as e:
         # A serious problem happened, like an SSLError or InvalidURL
         raise Exception("Error: {}".format(str(e)))
 
@@ -78,7 +76,7 @@ async def validate_token(access_token, issuer, audience, client_ids):
     await check_presence_of(access_token, issuer, audience, cid_list)
 
     # Decoding Header & Payload from token
-    header  = jwt.get_unverified_header(access_token)
+    header = jwt.get_unverified_header(access_token)
     payload = jwt.get_unverified_claims(access_token)
 
     # Verifying Claims
@@ -119,12 +117,13 @@ async def fetch_jwk_for(header, payload):
     url = jwks['jwks_uri']
 
     try:
-        jwks_response = await requests.get(url)
+        async with httpx.AsyncClient() as client:
+            jwks_response = await client.get(url)
 
         # Consider any status other than 2xx an error
         if not jwks_response.status_code // 100 == 2:
             raise Exception(jwks_response.text, jwks_response.status_code)
-    except requests.exceptions.RequestException as e:
+    except httpx.RequestError as e:
         # A serious problem happened, like an SSLError or InvalidURL
         raise Exception("Error: {}".format(str(e)))
 
@@ -148,7 +147,8 @@ async def fetch_metadata_for(payload):
     url = "{}/.well-known/oauth-authorization-server?client_id={}".format(issuer, client_id)
 
     try:
-        metadata_response = await requests.get(url)
+        async with httpx.AsyncClient() as client:
+            metadata_response = await client.get(url)
 
         # Consider any status other than 2xx an error
         if not metadata_response.status_code // 100 == 2:
@@ -157,6 +157,6 @@ async def fetch_metadata_for(payload):
         json_obj = metadata_response.json()
         return json_obj
 
-    except requests.exceptions.RequestException as e:
+    except httpx.RequestError as e:
         # A serious problem happened, like an SSLError or InvalidURL
         raise Exception("Error: {}".format(str(e)))

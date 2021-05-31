@@ -1,12 +1,13 @@
+import asynctest
 import jose.jwt as jwt
 import jose.jwk as jwk
-from aioresponses.compat import AsyncTestCase
+from httpx import RequestError
 from mock import patch
 from datetime import datetime
 from calendar import timegm
 from ddt import ddt, data, unpack
 from tests.mocks import MockHTTPResponse
-from requests.exceptions import RequestException
+
 from async_okta_jwt.exceptions import ExpiredSignatureError
 from async_okta_jwt.jwt import (generate_token, validate_token,
                                 fetch_jwk_for, JWKS_CACHE, fetch_metadata_for)
@@ -23,11 +24,11 @@ def pem_to_dict(pem, alg=jwk.ALGORITHMS.RS256):
 
 
 def raise_request_exception(*args, **kwargs):
-    raise RequestException("Failed to fetch.")
+    raise RequestError("Failed to fetch.")
 
 
 @ddt
-class TestJWT(AsyncTestCase):
+class TestJWT(asynctest.TestCase):
     priv_pem = open('tests/private.pem', 'r').read()
     pub_pem = open('tests/public.pem', 'r').read()
 
@@ -38,7 +39,7 @@ class TestJWT(AsyncTestCase):
         (MockHTTPResponse(), 'no access_token in response from /token endpoint', 401),
         (MockHTTPResponse(json={'access_token': 'access_token'}), '', None)
     )
-    @patch('async_okta_jwt.jwt.requests.post')
+    @patch('async_okta_jwt.jwt.httpx.AsyncClient.post')
     async def test_generate_token(self, mockresponse, error, code, mockpost):
         mockpost.return_value = mockresponse
         if error:
@@ -52,7 +53,7 @@ class TestJWT(AsyncTestCase):
                 'iss', 'cid', 'csecret', 'username', 'password')
             self.assertEqual(token, 'access_token')
 
-    @patch('async_okta_jwt.jwt.requests.post')
+    @patch('async_okta_jwt.jwt.httpx.AsyncClient.post')
     async def test_generate_token_request_error(self, mockpost):
         mockpost.side_effect = raise_request_exception
         with self.assertRaises(Exception) as ctx:
@@ -111,7 +112,7 @@ class TestJWT(AsyncTestCase):
             json={'keys': [{'kid': 'kid2'}]}), {'kid': 'kid2'})
     )
     @patch('async_okta_jwt.jwt.fetch_metadata_for')
-    @patch('async_okta_jwt.jwt.requests.get')
+    @patch('async_okta_jwt.jwt.httpx.AsyncClient.get')
     async def test_fetch_jwk_for(self, header, error_t, error, getresponse,
                             expected, mockget, _):
         with patch.dict(JWKS_CACHE, {'kid': pem_to_dict(
@@ -127,7 +128,7 @@ class TestJWT(AsyncTestCase):
                 self.assertEqual(jwk, expected)
 
     @patch('async_okta_jwt.jwt.fetch_metadata_for')
-    @patch('async_okta_jwt.jwt.requests.get')
+    @patch('async_okta_jwt.jwt.httpx.AsyncClient.get')
     async def test_fetch_jwk_request_error(self, mockget, _):
         mockget.side_effect = raise_request_exception
         with self.assertRaises(Exception) as ctx:
@@ -140,7 +141,8 @@ class TestJWT(AsyncTestCase):
             404, 'Not found.'), 'Not found.'),
         ({'cid': 'cid', 'iss': 'iss'}, MockHTTPResponse(), '')
     )
-    @patch('async_okta_jwt.jwt.requests.get')
+
+    @patch('async_okta_jwt.jwt.httpx.AsyncClient.get')
     async def test_metadata_for(self, payload, getresponse, error, mockget):
         mockget.return_value = getresponse
         if error:
@@ -151,7 +153,7 @@ class TestJWT(AsyncTestCase):
             meta = await fetch_metadata_for(payload)
             self.assertEqual(meta, {})
 
-    @patch('async_okta_jwt.jwt.requests.get')
+    @patch('async_okta_jwt.jwt.httpx.AsyncClient.get')
     async def test_fetch_metadata_request_error(self, mockget):
         mockget.side_effect = raise_request_exception
         with self.assertRaises(Exception) as ctx:
